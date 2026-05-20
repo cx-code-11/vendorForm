@@ -110,14 +110,18 @@ export function DigitalSignature() {
       
       // Send to backend
       try {
-        const response = await fetch('http://localhost:3001/api/send-pdf', {
+        const response = await fetch('http://localhost:3001/api/submit-application', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            email: vendorData.email,
             companyName: vendorData.companyName,
+            contactPerson: vendorData.contactPerson,
+            email: vendorData.email,
+            phone: vendorData.phone,
+            address: vendorData.address,
+            documentUrls: vendorData.documentUrls,
             pdfBase64: pdfBase64
           }),
         });
@@ -127,11 +131,11 @@ export function DigitalSignature() {
           console.error("Backend Error:", errorData);
           alert("Failed to send email. The PDF was downloaded.");
         } else {
-          console.log("Email sent successfully!");
+          console.log("Application submitted successfully!");
         }
       } catch (err) {
-        console.error("Network error while sending email:", err);
-        alert("Failed to connect to email server. The PDF was downloaded.");
+        console.error("Network error while submitting:", err);
+        alert("Failed to connect to server. The PDF was downloaded.");
       }
       
       // Navigate to success page

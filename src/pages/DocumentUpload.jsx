@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardFooter } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { StepIndicator } from '../components/StepIndicator';
-import { Upload, FileText, CheckCircle2 } from 'lucide-react';
+import { Upload, FileText, CheckCircle2, Loader2 } from 'lucide-react';
 
 const steps = [
   { name: 'Registration' },
@@ -20,16 +20,47 @@ export function DocumentUpload() {
     gst: null
   });
 
+  const [isUploading, setIsUploading] = useState(false);
+
   const handleFileChange = (e, type) => {
     if (e.target.files && e.target.files[0]) {
       setFiles({ ...files, [type]: e.target.files[0] });
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // In a real app, upload to Firebase Storage here
-    navigate('/agreement');
+    setIsUploading(true);
+
+    try {
+      const formData = new FormData();
+      if (files.aadhaar) formData.append('aadhaar', files.aadhaar);
+      if (files.pan) formData.append('pan', files.pan);
+      if (files.gst) formData.append('gst', files.gst);
+
+      const response = await fetch('http://localhost:3001/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+
+      const data = await response.json();
+      
+      // Save document URLs to vendor data
+      const vendorData = JSON.parse(localStorage.getItem('vendorData') || '{}');
+      vendorData.documentUrls = data.urls;
+      localStorage.setItem('vendorData', JSON.stringify(vendorData));
+
+      navigate('/agreement');
+    } catch (error) {
+      console.error('Error uploading documents:', error);
+      alert('Failed to upload documents. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const renderUploadBox = (title, type, description) => (
@@ -88,9 +119,16 @@ export function DocumentUpload() {
             <Button 
               type="submit" 
               size="lg"
-              disabled={!files.aadhaar || !files.pan}
+              disabled={!files.aadhaar || !files.pan || isUploading}
             >
-              Save & Continue
+              {isUploading ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Uploading...
+                </>
+              ) : (
+                'Save & Continue'
+              )}
             </Button>
           </CardFooter>
         </Card>
